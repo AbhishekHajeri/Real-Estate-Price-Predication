@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real Estate Price Prediction</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-home"></i> Real Estate AI</h1>
+            <p>Predict property prices with advanced machine learning</p>
+        </div>
+
+        <form id="prediction-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="feature1">
+                        <i class="fas fa-calendar-alt"></i>
+                        Transaction Date
+                    </label>
+                    <input type="text" name="feature1" id="feature1" placeholder="e.g., 2012.25 (March 2012)" required />
+                    <i class="fas fa-calendar input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature2">
+                        <i class="fas fa-clock"></i>
+                        House Age (Years)
+                    </label>
+                    <input type="text" name="feature2" id="feature2" placeholder="e.g., 10" required />
+                    <i class="fas fa-home input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature3">
+                        <i class="fas fa-subway"></i>
+                        Distance to MRT (m)
+                    </label>
+                    <input type="text" name="feature3" id="feature3" placeholder="e.g., 84.878" required />
+                    <i class="fas fa-map-marker-alt input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature4">
+                        <i class="fas fa-store"></i>
+                        Convenience Stores
+                    </label>
+                    <input type="text" name="feature4" id="feature4" placeholder="e.g., 5" required />
+                    <i class="fas fa-shopping-cart input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature5">
+                        <i class="fas fa-map"></i>
+                        Latitude
+                    </label>
+                    <input type="text" name="feature5" id="feature5" placeholder="e.g., 25.014" required />
+                    <i class="fas fa-globe input-icon"></i>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature6">
+                        <i class="fas fa-map"></i>
+                        Longitude
+                    </label>
+                    <input type="text" name="feature6" id="feature6" placeholder="e.g., 121.544" required />
+                    <i class="fas fa-globe input-icon"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="predict-btn">
+                <span>Predict Property Price</span>
+            </button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById("prediction-form");
+        const resultDiv = document.getElementById("result");
+        const submitBtn = document.querySelector(".predict-btn");
+
+        // Add input animation effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            // Add loading state
+            submitBtn.classList.add('loading');
+            submitBtn.innerHTML = '';
+            resultDiv.classList.remove('show');
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+                
+                setTimeout(() => {
+                    if (data.success) {
+                        const ntdPrice = parseFloat(data.price).toLocaleString('en-US', { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        });
+                        const inrPrice = (data.price * 2.5).toLocaleString('en-US', { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        });
+
+                        resultDiv.innerHTML = `
+                            <h2><i class="fas fa-chart-line"></i> Prediction Results</h2>
+                            <div class="price-display">
+                                <div class="price-card">
+                                    <div class="currency">New Taiwan Dollar</div>
+                                    <div class="amount">NT$ ${ntdPrice}</div>
+                                </div>
+                                <div class="price-card">
+                                    <div class="currency">Indian Rupee</div>
+                                    <div class="amount">₹ ${inrPrice}</div>
+                                </div>
+                            </div>
+                        `;
+                        resultDiv.classList.add('show');
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="error">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Error: ${data.error}
+                            </div>
+                        `;
+                        resultDiv.classList.add('show');
+                    }
+
+                    // Reset button
+                    submitBtn.classList.remove('loading');
+                    submitBtn.innerHTML = '<span>Predict Property Price</span>';
+                }, 1000);
+
+            } catch (error) {
+                setTimeout(() => {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Connection error. Please try again.
+                        </div>
+                    `;
+                    resultDiv.classList.add('show');
+                    
+                    // Reset button
+                    submitBtn.classList.remove('loading');
+                    submitBtn.innerHTML = '<span>Predict Property Price</span>';
+                }, 1000);
+            }
+        });
+
+        // Add floating animation to shapes
+        document.addEventListener('mousemove', (e) => {
+            const shapes = document.querySelectorAll('.shape');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+
+            shapes.forEach((shape, index) => {
+                const speed = (index + 1) * 2;
+                const xOffset = (x - 0.5) * speed;
+                const yOffset = (y - 0.5) * speed;
+                
+                shape.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${xOffset}deg)`;
+            });
+        });
+    </script>
+</body>
+</html>
